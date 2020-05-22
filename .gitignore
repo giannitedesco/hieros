@@ -1,0 +1,9 @@
+/obj
+/img
+/hieros.iso
+/TODO
+/perf.data
+/perf.data.old
+.*.swp
+*.rej
+*.orig
