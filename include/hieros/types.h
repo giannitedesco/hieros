@@ -1,5 +1,6 @@
 #pragma once
 
+#ifndef __ASM__
 #ifdef __i386__
 #error "64bit types on 32bit compiler"
 #endif
@@ -8,7 +9,6 @@
 #error "Not an LP64 platform"
 #endif
 
-#ifndef __ASM__
 #define NULL ((void *)0)
 
 typedef unsigned long u64;

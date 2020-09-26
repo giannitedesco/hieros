@@ -43,7 +43,7 @@ CFLAGS := \
 	-mno-mmx \
 	-mno-sse \
 	-mno-sse2 \
-	-mcmodel=large \
+	-mcmodel=kernel \
 	\
 	-O2 \
 	-flto -fwhole-program -fno-fat-lto-objects \
@@ -102,6 +102,9 @@ $(OBJ_DIR)/%.o: %.S $(MAKEFILE_LIST) | $(call dstamp,$$(@D))
 	$(CC) $(CFLAGS) -D__ASM__ \
 		-MMD -MP -MF $(call one_dep,$@) -MT $@ -c -o $@ $<
 
+AP_OBJ := $(OBJ_DIR)/kernel/apboot.o
+$(OBJ_DIR)/kernel/apboot.o: CFLAGS += -m16 -mcmodel=32
+
 KLIB_OBJ := $(OBJ_DIR)/kernel/lib/printf.o
 KERNEL_OBJ := \
 	$(OBJ_DIR)/kernel/entry32.o \
@@ -114,11 +117,12 @@ KERNEL_OBJ := \
 	$(OBJ_DIR)/kernel/faults.o \
 	$(OBJ_DIR)/kernel/idt.o \
 	$(OBJ_DIR)/kernel/acpi.o \
+	$(OBJ_DIR)/kernel/apack.o \
 	$(OBJ_DIR)/kernel/printk.o \
 	$(OBJ_DIR)/kernel/serio.o \
 	$(OBJ_DIR)/kernel/vga.o \
 	$(KLIB_OBJ)
-ALL_OBJ := $(KERNEL_OBJ)
+ALL_OBJ := $(KERNEL_OBJ) $(AP_OBJ)
 
 ALL_DEP := $(call depfile,$(ALL_OBJ)) $(EXTRA_DEPS)
 
@@ -126,6 +130,24 @@ ifneq ($(filter clean, $(MAKECMDGOALS)), clean)
 $(debug including $(ALL_DEP))
 -include $(ALL_DEP)
 endif
+
+APLINK := kernel/apboot.lnk
+$(OBJ_DIR)/apboot.elf: $(MAKEFILE_LIST) $(AP_OBJ) $(APLINK)
+	$(info realmode: $@)
+	$(CC) $(CFLAGS) \
+		-Wl,-m,elf_i386 \
+		-Wl,--emit-relocs \
+		-Wl,-nostdlib \
+		-nostartfiles \
+		-Wl,-z,execstack \
+		-Wl,--build-id=none \
+		-Wl,-T,$(APLINK) -o $@ \
+		$(AP_OBJ) -nostdlib
+
+$(OBJ_DIR)/apboot.bin: $(OBJ_DIR)/apboot.elf
+	objcopy -O binary $^ $@
+
+$(OBJ_DIR)/kernel/apack.o: $(OBJ_DIR)/apboot.bin
 
 KLINK := kernel/kernel.lnk
 $(OBJ_DIR)/kernel.elf: $(MAKEFILE_LIST) $(KERNEL_OBJ) $(KLINK)

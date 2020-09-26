@@ -1,0 +1,48 @@
+OUTPUT_FORMAT("elf32-i386")
+OUTPUT_ARCH(i386)
+ENTRY(_start)
+SECTIONS
+{
+     . = 0;
+
+     .rodata : AT(ADDR(.rodata))
+     {
+        *(.rodata)
+        *(.rodata.*)
+        . = ALIGN(4096);
+     }
+
+     .text : AT(ADDR(.text))
+     {
+        *(.text)
+        *(.text.*)
+        *(.text32)
+        *(.text32.*)
+        *(.text64)
+        *(.text64.*)
+        . = ALIGN(4096);
+     }
+
+    .data : AT(ADDR(.data))
+    {
+        *(.data)
+        *(.data.*)
+        . = ALIGN(128);
+    }
+
+    .bss : AT(ADDR(.bss))
+    {
+        _bss = .;
+
+        *(.bss*)
+        . = ALIGN(128);
+        *(COMMON)
+        . = ALIGN(4096);
+    }
+
+    /DISCARD/ :
+    {
+        *(.note*)
+        *(.debug*)
+    }
+}
