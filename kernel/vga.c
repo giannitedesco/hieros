@@ -30,10 +30,14 @@ static void update_cursor(void)
 
 void vga_puts(const char *str)
 {
-	while(*str) {
-		if (*str == '\n') {
+	for(;;) {
+		switch(*str) {
+		case '\0':
+			goto finish;
+		case '\n':
 			next_line();
-		}else{
+			break;
+		default:
 			__vga_vidptr[0] = *str;
 			__vga_vidptr[1] = ATTR;
 			__vga_vidptr += 2;
@@ -41,5 +45,6 @@ void vga_puts(const char *str)
 		str++;
 	}
 
+finish:
 	update_cursor();
 }

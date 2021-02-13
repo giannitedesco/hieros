@@ -105,22 +105,33 @@ $(OBJ_DIR)/%.o: %.S $(MAKEFILE_LIST) | $(call dstamp,$$(@D))
 AP_OBJ := $(OBJ_DIR)/kernel/apboot.o
 $(OBJ_DIR)/kernel/apboot.o: CFLAGS += -m16 -mcmodel=32
 
-KLIB_OBJ := $(OBJ_DIR)/kernel/lib/printf.o
+KLIB_OBJ := \
+	$(OBJ_DIR)/kernel/lib/string.o \
+	$(OBJ_DIR)/kernel/lib/printf.o
+
 KERNEL_OBJ := \
 	$(OBJ_DIR)/kernel/entry32.o \
 	$(OBJ_DIR)/kernel/entry64.o \
-	$(OBJ_DIR)/kernel/bootmem.o \
+	\
+	$(OBJ_DIR)/kernel/faults.o \
+	\
 	$(OBJ_DIR)/kernel/main.o \
+	$(OBJ_DIR)/kernel/bootmem.o \
 	$(OBJ_DIR)/kernel/cpuid.o \
 	$(OBJ_DIR)/kernel/ram_map.o \
-	$(OBJ_DIR)/kernel/lapic.o \
-	$(OBJ_DIR)/kernel/faults.o \
 	$(OBJ_DIR)/kernel/idt.o \
 	$(OBJ_DIR)/kernel/acpi.o \
+	$(OBJ_DIR)/kernel/madt.o \
+	$(OBJ_DIR)/kernel/lapic.o \
+	$(OBJ_DIR)/kernel/smpboot.o \
+	\
+	$(OBJ_DIR)/kernel/trampoline.o \
 	$(OBJ_DIR)/kernel/apack.o \
+	\
 	$(OBJ_DIR)/kernel/printk.o \
 	$(OBJ_DIR)/kernel/serio.o \
 	$(OBJ_DIR)/kernel/vga.o \
+	\
 	$(KLIB_OBJ)
 ALL_OBJ := $(KERNEL_OBJ) $(AP_OBJ)
 

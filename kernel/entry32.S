@@ -39,18 +39,18 @@ goodbye:
 
 	.balign	8
 ASM_VAR_BEGIN(gdt_ptr)
-gdt_ptr:
 	.word	(gdt_end - gdt) - 1
 	.long	(gdt - KERNEL_VMA)
 	.long	0
 ASM_VAR_END(gdt_ptr)
 
 	.balign	8
-gdt:
+ASM_VAR_BEGIN(gdt)
 	.quad	0
 	.quad	0x00cf9a000000ffff /* __KERNEL32_CS */
-	.quad	0x00af9a000000ffff /* __KERNEL_CS */
 	.quad	0x00cf92000000ffff /* __KERNEL_DS */
+	.quad	0x00af9a000000ffff /* __KERNEL_CS */
+ASM_VAR_END(gdt)
 gdt_end:
 
 ASM_VAR_BEGIN(__multiboot_info)
@@ -162,7 +162,7 @@ lm_ok:
 	movl	%eax, %cr4
 
 	/* 3. Setup 64bit paging: PML4T, PDPT, PDT. Here we'll just map the
-	 * first 2MB in to the identity mapping from zero and from kernel vma
+	 * first 1GB in to the identity mapping from zero and from kernel vma
 	 */
 
 	/* point to PDPT, mark as present/rw */

@@ -32,6 +32,7 @@
 #ifndef _PRINTF_H_
 #define _PRINTF_H_
 
+#include <hieros/types.h>
 #include <hieros/stdarg.h>
 
 #ifdef __cplusplus

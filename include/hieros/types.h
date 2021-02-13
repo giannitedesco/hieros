@@ -34,6 +34,8 @@ typedef __INTPTR_TYPE__ intptr_t;
 typedef __UINTPTR_TYPE__ uintptr_t;
 #endif
 
+#define BITS_PER_BYTE 8
+
 #define bool	_Bool
 #define true	1
 #define false	0

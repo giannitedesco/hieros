@@ -4,7 +4,9 @@
 #include <hieros/page_alloc.h>
 #include <hieros/lapic.h>
 #include <hieros/acpi.h>
+#include <hieros/madt.h>
 #include <hieros/idt.h>
+#include <hieros/smp.h>
 
 #include <hieros/printf.h>
 
@@ -16,5 +18,7 @@ void kernel_main(void)
 	memory_map_init();
 	idt_init();
 	acpi_init();
+	madt_init();
 	lapic_init();
+	smp_init();
 }

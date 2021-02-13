@@ -34,6 +34,7 @@ ASM_LOCAL_FUNC_BEGIN(_high_start)
 	/* Reset the stack, ensuring 16-byte alignment, and call in to main
 	 */
 	movq	$(__boot_stack_top - 8), %rsp
+	cld
 	callq	kernel_main
 ASM_FUNC_END(_high_start)
 

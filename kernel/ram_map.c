@@ -21,12 +21,13 @@ static void print_e820(const u8 *ptr, u32 len)
 	while(ptr + sizeof(*ent) <= end) {
 		ent = (struct memory_map *)ptr;
 
-		printf(" - 0x%.12lx -> 0x%.12lx (%u) %s",
-			ent->base_addr,
-			ent->base_addr + ent->length,
-			ent->type,
-			(ent->type == 1) ? "RAM" : "Reserved");
-		printf("\n");
+		if (ent->type == 1) {
+			printf(" - 0x%.12lx -> 0x%.12lx (%u) %s\n",
+				ent->base_addr,
+				ent->base_addr + ent->length,
+				ent->type,
+				(ent->type == 1) ? "RAM" : "Reserved");
+		}
 
 		ptr += sizeof(ent->size) + ent->size;
 	}
@@ -90,7 +91,6 @@ static void fixup_boot_page_tables(bool use_1gb_pages)
 	}
 }
 
-
 static bool map_ram_1g(u64 map_pages)
 {
 	u64 l4idx, l3idx, phys, start_addr;
@@ -98,7 +98,7 @@ static bool map_ram_1g(u64 map_pages)
 	unsigned int i;
 	u64 *pdpt;
 
-	start_addr = KERNEL_MAP;
+	start_addr = RAM_MAP;
 
 	pdpt = bootmem_alloc_page(1);
 	if (NULL == pdpt) {
