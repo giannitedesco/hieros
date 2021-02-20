@@ -6,4 +6,5 @@
 #ifndef __ASM__
 void bootmem_init(u64 bootmem_top);
 void *bootmem_alloc_page(unsigned int nr_pages);
+void *bootmem_zalloc_page(unsigned int nr_pages);
 #endif

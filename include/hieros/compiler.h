@@ -10,12 +10,14 @@
 #endif
 
 #if __STDC_VERSION__ > 201112L
-#define _noreturn _Noreturn
+#define __noreturn _Noreturn
 #else
-#define _noreturn __attribute__((noreturn))
+#define __noreturn __attribute__((noreturn))
 #endif
 
-#define _asmlinkage __attribute__((used, regparm(0)))
+#define __always_inline inline __attribute__((always_inline))
+
+#define __asmlinkage __attribute__((used, regparm(0)))
 
 #define static_assert(expr, ...) __static_assert(expr, ##__VA_ARGS__, #expr)
 #define __static_assert(expr, msg, ...) _Static_assert(expr, msg)
@@ -27,3 +29,8 @@
         ); \
 	sizeof(_a) / sizeof((_a)[0]); \
 })
+
+#ifndef __ASM__
+/* Used for inline asm to create compiler barriers */
+extern unsigned long __force_ordering;
+#endif

@@ -2,13 +2,14 @@
 #include <hieros/printk.h>
 #include <hieros/printf.h>
 #include <hieros/asm.h>
+#include <hieros/paging.h>
 
 #include <hieros/traps.h>
 
 static void print_regs(const struct regs *regs)
 {
-	printf("Guru meditation: err=%u(0x%x) FLAGS=%.8lx\n",
-		regs->err, regs->err, regs->rflags);
+	printf("Guru meditation: err=%u(0x%x) FLAGS=%.8lx CR2=%.16lx\n",
+		regs->err, regs->err, regs->rflags, get_cr2());
 	printf("rip=%.4lx:%.16lx orig_rsp=%.4lx:%.16lx\n",
 		regs->cs, regs->rip, regs->ss, regs->orig_rsp);
 	printf("rax=%.16lx rbx=%.16lx rcx=%.16lx rdx=%.16lx\n",

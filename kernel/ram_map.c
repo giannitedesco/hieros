@@ -1,3 +1,4 @@
+#include <hieros/compiler.h>
 #include <hieros/types.h>
 #include <hieros/kaddr.h>
 #include <hieros/kimage.h>
@@ -9,6 +10,7 @@
 #include <hieros/desc.h>
 #include <hieros/page_alloc.h>
 #include <hieros/bootmem.h>
+#include <hieros/string.h>
 
 unsigned long __force_order;
 
@@ -76,51 +78,76 @@ static u64 find_max_bootmem_addr(const u8 *ptr, u32 len)
 	return 0;
 }
 
-static void fixup_boot_page_tables(bool use_1gb_pages)
-{
-	u64 *lvl4 = &__boot_pml4t;
-	u64 *lvl3 = &__boot_pdpt;
-
-	/* Remove the identity map */
-	lvl4[0] = 0;
-
-	/* Convert text map to full gigabyte */
-	if (use_1gb_pages) {
-		lvl3[510] = PDPTE_PRESENT | PDPTE_RW | PDPTE_HUGE;
-		/* In this case __boot_pdt can be free'd */
-	}
-}
-
-static bool map_ram_1g(u64 map_pages)
+static const struct pml4t *map_ram_1g(u64 map_pages)
 {
 	u64 l4idx, l3idx, phys, start_addr;
-	u64 *pml4t = (u64 *)&__boot_pml4t;
+	struct pml4t *p4;
+	struct pdpt *p3;
 	unsigned int i;
-	u64 *pdpt;
 
-	start_addr = RAM_MAP;
-
-	pdpt = bootmem_alloc_page(1);
-	if (NULL == pdpt) {
-		/* panic */
-		return false;
+#if 0
+	for (i = 0; i < ARRAY_SIZE(__boot_pml4t.pml4e); i++) {
+		if (!__boot_pml4t.pml4e[i].present)
+			continue;
+		printf("__boot_pml4t: [%.3x] = 0x%.16lx\n",
+			i, __boot_pml4t.pml4e[i].word);
 	}
 
+	for (i = 0; i < ARRAY_SIZE(p3->pdpte); i++) {
+		if (!__boot_pdpt.pdpte[i].present)
+			continue;
+		printf("__boot_pdpt[%.3x] = 0x%.16lx\n",
+			i, __boot_pdpt.pdpte[i].word);
+	}
+#endif
+
+	p4 = bootmem_zalloc_page(1);
+	if (p4 == NULL) {
+		/* panic */
+		return NULL;
+	}
+
+	p3 = bootmem_zalloc_page(1);
+	if (p3 == NULL) {
+		/* panic */
+		return NULL;
+	}
+
+	/* TODO: set NX bit here, we don't want to execute from RAM map */
+	start_addr = RAM_MAP;
 	l4idx = __pml4t_index(start_addr);
-	pml4t[l4idx] = ((u64)__pa(pdpt)) | PML4E_RW | PML4E_PRESENT;
+	p4->pml4e[l4idx] = pml4e_kernel_rwx(__pa(p3));
 
 	for(phys = i = 0; i < map_pages;
 			i++,
 			start_addr += PAGE1G_SIZE,
 			phys += PAGE1G_SIZE) {
 		l3idx = __pdpt_index(start_addr);
-		pdpt[l3idx] = phys | PDPTE_HUGE | PDPTE_RW | PDPTE_PRESENT;
+		p3->pdpte[l3idx] = pdpte_kernel_1g_rwx(phys);
 	}
 
-	return true;
+	l4idx = __pml4t_index(KERNEL_VMA);
+	p4->pml4e[l4idx] = pml4e_kernel_rwx(__pa(&__boot_pdpt));
+
+	/* print the results */
+#if 0
+	for (i = 0; i < ARRAY_SIZE(p4->pml4e); i++) {
+		if (!p4->pml4e[i].present)
+			continue;
+		printf("pml4t[%.3x] = 0x%.16lx\n", i, p4->pml4e[i].word);
+	}
+
+	for (i = 0; i < ARRAY_SIZE(p3->pdpte); i++) {
+		if (!p3->pdpte[i].present)
+			continue;
+		printf("pdpte[%.3x] = 0x%.16lx\n", i, p3->pdpte[i].word);
+	}
+#endif
+
+	return p4;
 }
 
-static bool map_all_ram(u64 mem_hi, bool use_1gb_pages)
+static const struct pml4t *map_all_ram(u64 mem_hi, bool use_1gb_pages)
 {
 	u64 map_pages, map_pdpt;
 
@@ -143,7 +170,7 @@ static bool map_all_ram(u64 mem_hi, bool use_1gb_pages)
 		return map_ram_1g(map_pages);
 	}else{
 		kputs("TODO: 2M page support");
-		return false;
+		return NULL;
 	}
 }
 
@@ -154,6 +181,7 @@ void memory_map_init(void)
 	bool huge_pages = (cpuid_get_ext_features() & CPUID_PDPE1GB);
 	u64 mem_hi, bootmem_hi;
 	struct desc_ptr gdt;
+	const void *pgtbls;
 
 	if (!(mbi->flags & MBF_MMAP)) {
 		kputs("memory map not present\n");
@@ -167,14 +195,17 @@ void memory_map_init(void)
 	bootmem_init(bootmem_hi);
 
 	mem_hi = find_max_phys_addr(mem_map, mbi->mmap_length);
-	map_all_ram(mem_hi, huge_pages);
-
-	fixup_boot_page_tables(huge_pages);
+	pgtbls = map_all_ram(mem_hi, huge_pages);
+	if (pgtbls == NULL ) {
+		kputs("failed to map RAM\n");
+		/* panic */
+		return;
+	}
 
 	/* GDT direct mapping will be gone, so better reload it here first */
 	get_gdt(&gdt);
 	gdt.addr = (u64)__va(gdt.addr);
 	load_gdt(&gdt);
 
-	flush_tlb();
+	cr3_set(__pa(pgtbls));
 }
