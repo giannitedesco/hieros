@@ -1,7 +1,5 @@
-#include <hieros/types.h>
+#include <hieros/kernel.h>
 #include <hieros/kaddr.h>
-#include <hieros/printf.h>
-#include <hieros/printk.h>
 #include <hieros/acpi.h>
 
 #define RSDP_SIG 0x2052545020445352UL /* "RSDP PTR " */
@@ -118,5 +116,5 @@ static bool rip_rsdp(void)
 void acpi_init(void)
 {
 	if (!rip_rsdp())
-		return; // panic
+		panic("acpi: Unable to locate RSDP\n");
 }

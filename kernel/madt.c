@@ -1,7 +1,5 @@
-#include <hieros/types.h>
+#include <hieros/kernel.h>
 #include <hieros/kaddr.h>
-#include <hieros/printf.h>
-#include <hieros/printk.h>
 #include <hieros/acpi.h>
 #include <hieros/cpu_mask.h>
 #include <hieros/cpus.h>
@@ -64,9 +62,7 @@ void madt_init(void)
 
 	madt = (struct acpi_madt *)acpi_sdt_lookup("APIC");
 	if (NULL == madt) {
-		kputs("madt: MADT missing\n");
-		/* panic */
-		return;
+		panic("madt: MADT missing\n");
 	}
 
 	ptr = madt->data;

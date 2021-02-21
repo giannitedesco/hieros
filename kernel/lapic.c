@@ -1,7 +1,5 @@
-#include <hieros/types.h>
+#include <hieros/kernel.h>
 #include <hieros/kaddr.h>
-#include <hieros/printf.h>
-#include <hieros/printk.h>
 #include <hieros/cpuid.h>
 #include <hieros/ioports.h>
 #include <hieros/io.h>
@@ -127,9 +125,7 @@ void lapic_init(void)
 
 	features = cpuid_get_features();
 	if ((features & CPUID_APIC) == 0) {
-		kputs("lapic: CPUID_APIC missing\n");
-		/* panic */
-		return;
+		panic("lapic: CPUID_APIC missing\n");
 	}
 
 	base_msr = get_base_msr();

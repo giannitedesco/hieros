@@ -1,16 +1,12 @@
-#include <hieros/compiler.h>
-#include <hieros/types.h>
+#include <hieros/kernel.h>
 #include <hieros/kaddr.h>
 #include <hieros/kimage.h>
-#include <hieros/printk.h>
 #include <hieros/paging.h>
-#include <hieros/printf.h>
 #include <hieros/cpuid.h>
 #include <hieros/multiboot.h>
 #include <hieros/desc.h>
 #include <hieros/page_alloc.h>
 #include <hieros/bootmem.h>
-#include <hieros/string.h>
 
 unsigned long __force_order;
 
@@ -103,14 +99,12 @@ static const struct pml4t *map_ram_1g(u64 map_pages)
 
 	p4 = bootmem_zalloc_page(1);
 	if (p4 == NULL) {
-		/* panic */
-		return NULL;
+		panic("p4 alloc failed\n");
 	}
 
 	p3 = bootmem_zalloc_page(1);
 	if (p3 == NULL) {
-		/* panic */
-		return NULL;
+		panic("p3 alloc failed\n");
 	}
 
 	/* TODO: set NX bit here, we don't want to execute from RAM map */
@@ -169,8 +163,7 @@ static const struct pml4t *map_all_ram(u64 mem_hi, bool use_1gb_pages)
 	if (use_1gb_pages) {
 		return map_ram_1g(map_pages);
 	}else{
-		kputs("TODO: 2M page support");
-		return NULL;
+		panic("TODO: 2M page support\n");
 	}
 }
 
@@ -180,13 +173,10 @@ void memory_map_init(void)
 	const u8 *mem_map = __va(mbi->mmap);
 	bool huge_pages = (cpuid_get_ext_features() & CPUID_PDPE1GB);
 	u64 mem_hi, bootmem_hi;
-	struct desc_ptr gdt;
 	const void *pgtbls;
 
 	if (!(mbi->flags & MBF_MMAP)) {
-		kputs("memory map not present\n");
-		/* panic */
-		return;
+		panic("multiboot memory map not present\n");
 	}
 
 	print_e820(__va(mbi->mmap), mbi->mmap_length);
@@ -196,16 +186,6 @@ void memory_map_init(void)
 
 	mem_hi = find_max_phys_addr(mem_map, mbi->mmap_length);
 	pgtbls = map_all_ram(mem_hi, huge_pages);
-	if (pgtbls == NULL ) {
-		kputs("failed to map RAM\n");
-		/* panic */
-		return;
-	}
-
-	/* GDT direct mapping will be gone, so better reload it here first */
-	get_gdt(&gdt);
-	gdt.addr = (u64)__va(gdt.addr);
-	load_gdt(&gdt);
 
 	cr3_set(__pa(pgtbls));
 }
